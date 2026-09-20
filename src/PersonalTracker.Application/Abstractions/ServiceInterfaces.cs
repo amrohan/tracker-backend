@@ -53,10 +53,10 @@ public interface IReferenceResolver
 
 public interface IRecordValueValidator
 {
-    /// <summary>Validates and normalises record values. Throws <see cref="RequestValidationException"/> keyed by field key.</summary>
     Task<Dictionary<string, object?>> ValidateAsync(
         Guid userId, IReadOnlyList<Field> fields,
         IReadOnlyDictionary<string, JsonElement> values,
         IReadOnlyDictionary<string, JsonElement>? existing,
-        IEnumerable<string> submittedKeys, CancellationToken ct);
+        IEnumerable<string> submittedKeys, CancellationToken ct,
+        bool verifyReferences = true);
 }

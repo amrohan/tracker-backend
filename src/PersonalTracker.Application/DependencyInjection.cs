@@ -11,7 +11,8 @@ public static class DependencyInjection
         services.AddSingleton<IFieldTypeHandler>(new TextFieldHandler(FieldType.LongText, "Long text", 20_000));
         services.AddSingleton<IFieldTypeHandler, UrlFieldHandler>();
         services.AddSingleton<IFieldTypeHandler>(new NumberFieldHandler(FieldType.Number, "Number", isCurrency: false));
-        services.AddSingleton<IFieldTypeHandler>(new NumberFieldHandler(FieldType.Currency, "Currency", isCurrency: true));
+        services.AddSingleton<IFieldTypeHandler>(new NumberFieldHandler(FieldType.Currency, "Currency",
+            isCurrency: true));
         services.AddSingleton<IFieldTypeHandler, RatingFieldHandler>();
         services.AddSingleton<IFieldTypeHandler, DateFieldHandler>();
         services.AddSingleton<IFieldTypeHandler, DateTimeFieldHandler>();
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IFieldService, FieldService>();
         services.AddScoped<ICoverService, CoverService>();
         services.AddScoped<IRecordService, RecordService>();
+        services.AddScoped<IImportService, ImportService>();
         return services;
     }
 }
