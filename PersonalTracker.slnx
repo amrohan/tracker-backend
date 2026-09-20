@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PersonalTracker.Domain/PersonalTracker.Domain.csproj" />
+    <Project Path="src/PersonalTracker.Application/PersonalTracker.Application.csproj" />
+    <Project Path="src/PersonalTracker.Infrastructure/PersonalTracker.Infrastructure.csproj" />
+    <Project Path="src/PersonalTracker.Api/PersonalTracker.Api.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,11 @@
+global using System.Text.Json;
+global using PersonalTracker.Application.Abstractions;
+global using PersonalTracker.Application.Common;
+global using PersonalTracker.Application.Contracts;
+global using PersonalTracker.Application.Fields;
+global using PersonalTracker.Application.Querying;
+global using PersonalTracker.Domain.Entities;
+global using PersonalTracker.Domain.Enums;
+global using PersonalTracker.Domain.Exceptions;
+global using PersonalTracker.Domain.ValueObjects;
+global using PersonalTracker.Application.Services;
