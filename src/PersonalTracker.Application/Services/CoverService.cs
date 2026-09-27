@@ -82,7 +82,7 @@ public sealed class CoverService(
             ".webp" => "image/webp",
             _ => "image/jpeg"
         };
-        return new CoverImage(storage.OpenRead(collection.CoverValue), contentType);
+        return new CoverImage(await storage.OpenReadAsync(collection.CoverValue, ct), contentType);
     }
 
     private async Task<Collection> LoadAsync(Guid id, CancellationToken ct) =>

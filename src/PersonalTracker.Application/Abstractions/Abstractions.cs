@@ -8,6 +8,9 @@ public interface ICurrentUser
 
 public interface IUnitOfWork
 {
+    /// <summary>Queues a write. Nothing touches the database until SaveChangesAsync flushes the queue, in order.</summary>
+    void Enqueue(Func<CancellationToken, Task> write);
+
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 
@@ -29,8 +32,7 @@ public interface ITokenService
 
 public interface IFileStorage
 {
-    /// <summary>Stores the content and returns a relative path that can be passed to the other methods.</summary>
     Task<string> SaveAsync(Guid userId, Stream content, string extension, CancellationToken ct);
-    Stream OpenRead(string path);
+    Task<Stream> OpenReadAsync(string path, CancellationToken ct);
     Task DeleteAsync(string path, CancellationToken ct);
 }

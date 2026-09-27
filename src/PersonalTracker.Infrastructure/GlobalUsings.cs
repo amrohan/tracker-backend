@@ -4,3 +4,4 @@ global using PersonalTracker.Domain.Entities;
 global using PersonalTracker.Domain.Enums;
 global using PersonalTracker.Domain.Exceptions;
 global using PersonalTracker.Domain.ValueObjects;
+global using PersonalTracker.Infrastructure.D1;
