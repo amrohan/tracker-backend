@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,11 +12,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // The provider is chosen here only; nothing outside Infrastructure knows about SQLite.
-        // To move to PostgreSQL: add Npgsql.EntityFrameworkCore.PostgreSQL and call UseNpgsql here.
-        var connectionString = configuration.GetConnectionString("Default") ?? "Data Source=App_Data/tracker.db";
-        EnsureSqliteDirectory(connectionString);
-        services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+        var connectionString = configuration.GetConnectionString("Default")
+                               ?? throw new InvalidOperationException("Connection string 'Default' was not found.");
+
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUserRepository, UserRepository>();
@@ -39,6 +38,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
+
         return services;
     }
 
@@ -48,25 +48,9 @@ public static class DependencyInjection
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        if (db.Database.GetMigrations().Any()) await db.Database.MigrateAsync(ct);
-        else await db.Database.EnsureCreatedAsync(ct);
-
-        try
-        {
-            // WAL lets reads continue while a write is in progress.
-            await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", ct);
-        }
-        catch (Exception)
-        {
-            // non-fatal
-        }
-    }
-
-    private static void EnsureSqliteDirectory(string connectionString)
-    {
-        var builder = new SqliteConnectionStringBuilder(connectionString);
-        if (string.IsNullOrWhiteSpace(builder.DataSource) || builder.DataSource == ":memory:") return;
-        var directory = Path.GetDirectoryName(Path.GetFullPath(builder.DataSource));
-        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+        if (db.Database.GetMigrations().Any())
+            await db.Database.MigrateAsync(ct);
+        else
+            await db.Database.EnsureCreatedAsync(ct);
     }
 }
