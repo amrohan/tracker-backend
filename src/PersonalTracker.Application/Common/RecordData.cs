@@ -1,17 +1,22 @@
+using System.Text.Json;
+
 namespace PersonalTracker.Application.Common;
 
 public static class RecordData
 {
-    public static Dictionary<string, JsonElement> Parse(string? json)
+    /// <summary>Parses the <see cref="JsonDocument"/> stored on a <c>TrackerRecord</c> into a mutable dictionary.</summary>
+    public static Dictionary<string, JsonElement> Parse(JsonDocument? doc)
     {
-        if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, JsonElement>();
-        return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, JsonDefaults.Options)
+        if (doc is null) return new Dictionary<string, JsonElement>();
+        return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(doc.RootElement.GetRawText(), JsonDefaults.Options)
                ?? new Dictionary<string, JsonElement>();
     }
 
-    public static string Serialize(IDictionary<string, object?> values) =>
-        JsonSerializer.Serialize(values, JsonDefaults.Options);
+    /// <summary>Serializes a dictionary into a <see cref="JsonDocument"/> suitable for assigning to <c>TrackerRecord.Data</c>.</summary>
+    public static JsonDocument ToDocument(IDictionary<string, object?> values) =>
+        JsonDocument.Parse(JsonSerializer.Serialize(values, JsonDefaults.Options));
 
-    public static string Serialize(IDictionary<string, JsonElement> values) =>
-        JsonSerializer.Serialize(values, JsonDefaults.Options);
+    /// <summary>Serializes a dictionary into a <see cref="JsonDocument"/> suitable for assigning to <c>TrackerRecord.Data</c>.</summary>
+    public static JsonDocument ToDocument(IDictionary<string, JsonElement> values) =>
+        JsonDocument.Parse(JsonSerializer.Serialize(values, JsonDefaults.Options));
 }

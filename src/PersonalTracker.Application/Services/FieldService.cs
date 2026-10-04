@@ -61,7 +61,7 @@ public sealed class FieldService(
         }
 
         var handler = registry.Get(newType);
-        List<(TrackerRecord Record, string Json)>? conversions = null;
+        List<(TrackerRecord Record, JsonDocument Doc)>? conversions = null;
 
         if (typeChanged || request.Config is not null)
         {
@@ -71,7 +71,7 @@ public sealed class FieldService(
             if (!typeChanged && handler.IsReference && normalized.TargetCollectionId != field.Config.TargetCollectionId)
             {
                 var existing = await records.ListByCollectionAsync(field.CollectionId, userId, track: false, ct);
-                if (existing.Any(r => RecordData.Parse(r.DataJson).TryGetValue(field.Key, out var v) && !JsonValues.IsEmpty(v)))
+                if (existing.Any(r => RecordData.Parse(r.Data).TryGetValue(field.Key, out var v) && !JsonValues.IsEmpty(v)))
                     errors.Add("config.targetCollectionId", "This reference already has values, so its target collection cannot change.");
             }
 
@@ -106,11 +106,11 @@ public sealed class FieldService(
         errors.ThrowIfAny();
 
         if (conversions is not null)
-            foreach (var (record, json) in conversions)
+            foreach (var (record, doc) in conversions)
             {
                 var tracked = await records.GetAsync(record.Id, userId, track: true, ct);
                 if (tracked is null) continue;
-                tracked.DataJson = json;
+                tracked.Data = doc;
                 tracked.Version++;
             }
 
@@ -127,9 +127,9 @@ public sealed class FieldService(
         var collectionRecords = await records.ListByCollectionAsync(field.CollectionId, userId, track: true, ct);
         foreach (var record in collectionRecords)
         {
-            var data = RecordData.Parse(record.DataJson);
+            var data = RecordData.Parse(record.Data);
             if (!data.Remove(field.Key)) continue;
-            record.DataJson = RecordData.Serialize(data);
+            record.Data = RecordData.ToDocument(data);
             record.Version++;
         }
 
@@ -165,16 +165,16 @@ public sealed class FieldService(
     }
 
     /// <summary>Re-validates stored values against the new type; returns the rewritten records (if any).</summary>
-    private async Task<List<(TrackerRecord Record, string Json)>> ConvertExistingValuesAsync(
+    private async Task<List<(TrackerRecord Record, JsonDocument Doc)>> ConvertExistingValuesAsync(
         Field field, IFieldTypeHandler handler, Guid userId, ErrorBag errors, CancellationToken ct)
     {
-        var changes = new List<(TrackerRecord, string)>();
+        var changes = new List<(TrackerRecord, JsonDocument)>();
         var invalid = 0;
         var existing = await records.ListByCollectionAsync(field.CollectionId, userId, track: false, ct);
 
         foreach (var record in existing)
         {
-            var data = RecordData.Parse(record.DataJson);
+            var data = RecordData.Parse(record.Data);
             if (!data.TryGetValue(field.Key, out var value) || JsonValues.IsEmpty(value)) continue;
 
             var normalized = handler.NormalizeValue(value, field, value, out var error);
@@ -183,7 +183,7 @@ public sealed class FieldService(
             var rewritten = JsonSerializer.SerializeToElement(normalized, JsonDefaults.Options);
             if (rewritten.GetRawText() == value.GetRawText()) continue;
             data[field.Key] = rewritten;
-            changes.Add((record, RecordData.Serialize(data)));
+            changes.Add((record, RecordData.ToDocument(data)));
         }
 
         if (invalid > 0)

@@ -124,7 +124,7 @@ public sealed class RecordService(
         {
             CollectionId = collectionId,
             UserId = userId,
-            DataJson = RecordData.Serialize(normalized),
+            Data = RecordData.ToDocument(normalized),
             CreatedAt = now,
             UpdatedAt = now,
             Version = 1
@@ -144,7 +144,7 @@ public sealed class RecordService(
 
         var collectionFields = await fields.ListByCollectionAsync(record.CollectionId, track: false, ct);
         var submitted = request.Values ?? new Dictionary<string, JsonElement>();
-        var existing = RecordData.Parse(record.DataJson);
+        var existing = RecordData.Parse(record.Data);
 
         // PATCH semantics: submitted keys overwrite, null/empty clears, everything else is kept.
         var merged = new Dictionary<string, JsonElement>(existing);
@@ -156,7 +156,7 @@ public sealed class RecordService(
 
         var normalized = await validator.ValidateAsync(userId, collectionFields, merged, existing, submitted.Keys, ct);
 
-        record.DataJson = RecordData.Serialize(normalized);
+        record.Data = RecordData.ToDocument(normalized);
         record.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         record.Version++;
         await uow.SaveChangesAsync(ct);
@@ -177,7 +177,7 @@ public sealed class RecordService(
         foreach (var (other, data, otherFields) in referencing)
         {
             foreach (var field in otherFields) RemoveReference(data, field, record.Id);
-            other.DataJson = RecordData.Serialize(data);
+            other.Data = RecordData.ToDocument(data);
             other.Version++;
         }
 
@@ -198,7 +198,7 @@ public sealed class RecordService(
     private async Task<RecordDetailResult> BuildDetailAsync(
         Guid userId, TrackerRecord record, IReadOnlyList<Field> collectionFields, CancellationToken ct)
     {
-        var row = new RecordRow(record, RecordData.Parse(record.DataJson));
+        var row = new RecordRow(record, RecordData.Parse(record.Data));
         var references = await ResolveReferencesAsync(userId, new[] { row }, collectionFields, ct);
         return new RecordDetailResult(ToDto(row), references);
     }
@@ -229,7 +229,7 @@ public sealed class RecordService(
             foreach (var candidate in candidates)
             {
                 if (candidate.Id == target.Id) continue;
-                var data = RecordData.Parse(candidate.DataJson);
+                var data = RecordData.Parse(candidate.Data);
                 var hits = group.Where(f => data.TryGetValue(f.Key, out var v) && ContainsId(v, target.Id)).ToList();
                 if (hits.Count > 0) result.Add((candidate, data, hits));
             }

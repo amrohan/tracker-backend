@@ -7,7 +7,7 @@ public static class RecordLabels
         string? label = null;
         if (titleField is not null)
         {
-            var data = RecordData.Parse(record.DataJson);
+            var data = RecordData.Parse(record.Data);
             if (data.TryGetValue(titleField.Key, out var value) && !JsonValues.IsEmpty(value))
                 label = registry.Get(titleField.Type).ToDisplayText(value, titleField);
         }

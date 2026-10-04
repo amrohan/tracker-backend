@@ -118,7 +118,7 @@ public sealed class ImportService(
                 {
                     CollectionId = lookup.TargetCollectionId,
                     UserId = userId,
-                    DataJson = RecordData.Serialize(new Dictionary<string, object?> { [lookup.TitleField!.Key] = key }),
+                    Data = RecordData.ToDocument(new Dictionary<string, object?> { [lookup.TitleField!.Key] = key }),
                     CreatedAt = stamp,
                     UpdatedAt = stamp
                 };
@@ -190,7 +190,7 @@ public sealed class ImportService(
             {
                 CollectionId = collectionId,
                 UserId = userId,
-                DataJson = RecordData.Serialize(data),
+                Data = RecordData.ToDocument(data),
                 CreatedAt = stamp,
                 UpdatedAt = stamp
             }, ct);

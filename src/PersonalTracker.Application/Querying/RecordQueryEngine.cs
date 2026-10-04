@@ -23,7 +23,7 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
         if (query.Filters.Count > Limits.MaxFilters)
             throw FilterEvaluator.Invalid($"You can use at most {Limits.MaxFilters} filters at once.");
 
-        var rows = records.Select(r => new RecordRow(r, RecordData.Parse(r.DataJson))).ToList();
+        var rows = records.Select(r => new RecordRow(r, RecordData.Parse(r.Data))).ToList();
         var fieldsById = fields.ToDictionary(f => f.Id);
 
         // 1) field filters
@@ -34,6 +34,7 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
                 throw FilterEvaluator.Invalid("A filter refers to a field that no longer exists.");
             current = current.Where(FilterEvaluator.Compile(field, registry.Get(field.Type), filter));
         }
+
         var filtered = current.ToList();
 
         // 2) labels (only when search or sort needs reference labels)
@@ -61,8 +62,12 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
         {
             var byUpdated = string.Equals(query.SortBy, "updatedAt", StringComparison.OrdinalIgnoreCase);
             sorted = byUpdated
-                ? (descending ? filtered.OrderByDescending(r => r.Entity.UpdatedAt) : filtered.OrderBy(r => r.Entity.UpdatedAt))
-                : (descending ? filtered.OrderByDescending(r => r.Entity.CreatedAt) : filtered.OrderBy(r => r.Entity.CreatedAt));
+                ? (descending
+                    ? filtered.OrderByDescending(r => r.Entity.UpdatedAt)
+                    : filtered.OrderBy(r => r.Entity.UpdatedAt))
+                : (descending
+                    ? filtered.OrderByDescending(r => r.Entity.CreatedAt)
+                    : filtered.OrderBy(r => r.Entity.CreatedAt));
         }
         else
         {
@@ -83,19 +88,23 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
             sortBy.Equals("updatedAt", StringComparison.OrdinalIgnoreCase)) return null;
 
         if (!Guid.TryParse(sortBy, out var id) || !fieldsById.TryGetValue(id, out var field))
-            throw new RequestValidationException(new Dictionary<string, string[]> { ["sortBy"] = ["Unknown sort field."] });
+            throw new RequestValidationException(new Dictionary<string, string[]>
+                { ["sortBy"] = ["Unknown sort field."] });
 
         if (!FilterOperators.IsSortable(registry.Get(field.Type).Kind))
-            throw new RequestValidationException(new Dictionary<string, string[]> { ["sortBy"] = [$"'{field.Name}' cannot be sorted."] });
+            throw new RequestValidationException(new Dictionary<string, string[]>
+                { ["sortBy"] = [$"'{field.Name}' cannot be sorted."] });
         return field;
     }
 
     private static List<string> SplitTokens(string? search) =>
         string.IsNullOrWhiteSpace(search)
             ? new List<string>()
-            : search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(10).ToList();
+            : search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Take(10).ToList();
 
-    private bool MatchesSearch(RecordRow row, IReadOnlyList<Field> fields, List<string> tokens, Dictionary<Guid, RecordReferenceDto> labels)
+    private bool MatchesSearch(RecordRow row, IReadOnlyList<Field> fields, List<string> tokens,
+        Dictionary<Guid, RecordReferenceDto> labels)
     {
         var sb = new StringBuilder();
         foreach (var field in fields)
@@ -146,9 +155,11 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
             case ValueKind.Choice:
                 if (handler.IsReference)
                 {
-                    if (Guid.TryParse(v.GetString(), out var id) && labels.TryGetValue(id, out var label)) return label.Label;
+                    if (Guid.TryParse(v.GetString(), out var id) && labels.TryGetValue(id, out var label))
+                        return label.Label;
                     return null;
                 }
+
                 return v.ValueKind == JsonValueKind.String ? v.GetString() : null;
             default:
                 return null;
@@ -160,7 +171,7 @@ public sealed class RecordQueryEngine(IFieldTypeRegistry registry, IReferenceRes
         public int Compare(IComparable? x, IComparable? y)
         {
             if (x is null && y is null) return 0;
-            if (x is null) return 1;   // empty values are always last, in both directions
+            if (x is null) return 1; // empty values are always last, in both directions
             if (y is null) return -1;
             var c = x is string a && y is string b
                 ? string.Compare(a, b, StringComparison.OrdinalIgnoreCase)

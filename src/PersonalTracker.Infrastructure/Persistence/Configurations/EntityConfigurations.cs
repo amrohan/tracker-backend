@@ -49,7 +49,8 @@ public sealed class CollectionConfiguration : IEntityTypeConfiguration<Collectio
         b.HasIndex(x => x.UserId);
 
         b.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
-        b.HasMany(x => x.Fields).WithOne(f => f.Collection).HasForeignKey(f => f.CollectionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasMany(x => x.Fields).WithOne(f => f.Collection).HasForeignKey(f => f.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -83,13 +84,21 @@ public sealed class TrackerRecordConfiguration : IEntityTypeConfiguration<Tracke
     {
         b.ToTable("Records");
         b.HasKey(x => x.Id);
-        b.Property(x => x.DataJson).HasColumnType("TEXT").IsRequired();
+        b.Property(x => x.Data).HasColumnType("jsonb").IsRequired();
         b.Property(x => x.Version).IsConcurrencyToken();
-        b.HasIndex(x => x.CollectionId);
-        b.HasIndex(x => x.UserId);
+        b.HasIndex(x => new { x.UserId, x.CollectionId });
+        b.HasIndex(x => x.CreatedAt);
+        b.HasIndex(x => x.UpdatedAt);
 
-        b.HasOne<Collection>().WithMany().HasForeignKey(x => x.CollectionId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne<Collection>()
+            .WithMany()
+            .HasForeignKey(x => x.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
