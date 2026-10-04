@@ -6,7 +6,9 @@ public sealed class ErrorBag
     private readonly Dictionary<string, List<string>> _errors;
     private readonly string _prefix;
 
-    public ErrorBag() : this(new Dictionary<string, List<string>>(), string.Empty) { }
+    public ErrorBag() : this(new Dictionary<string, List<string>>(), string.Empty)
+    {
+    }
 
     private ErrorBag(Dictionary<string, List<string>> errors, string prefix)
     {
@@ -27,6 +29,7 @@ public sealed class ErrorBag
             list = new List<string>();
             _errors[full] = list;
         }
+
         list.Add(message);
     }
 

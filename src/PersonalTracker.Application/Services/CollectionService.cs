@@ -16,7 +16,8 @@ public sealed class CollectionService(
         var list = await collections.ListAsync(userId, ct);
         var stats = (await records.GetStatsAsync(userId, ct)).ToDictionary(s => s.CollectionId);
         return list
-            .OrderByDescending(c => stats.TryGetValue(c.Id, out var s) && s.LastActivityAt > c.UpdatedAt ? s.LastActivityAt : c.UpdatedAt)
+            .OrderByDescending(c =>
+                stats.TryGetValue(c.Id, out var s) && s.LastActivityAt > c.UpdatedAt ? s.LastActivityAt : c.UpdatedAt)
             .Select(c => CollectionMapper.ToSummary(c, stats.GetValueOrDefault(c.Id)))
             .ToList();
     }
@@ -70,7 +71,8 @@ public sealed class CollectionService(
         var context = new ConfigContext(collection.Id, existingCollectionIds);
         var built = new List<Field>();
         for (var i = 0; i < inputs.Count && i < Limits.MaxFieldsPerCollection; i++)
-            built.Add(fieldBuilder.Build(collection.Id, inputs[i], i, built, context, errors.Scope($"fields[{i}]."), now));
+            built.Add(fieldBuilder.Build(collection.Id, inputs[i], i, built, context, errors.Scope($"fields[{i}]."),
+                now));
 
         errors.ThrowIfAny();
 
@@ -94,6 +96,7 @@ public sealed class CollectionService(
                 errors.Add("name", "You already have a collection with this name.");
             collection.Name = name;
         }
+
         if (request.Description is not null)
             collection.Description = Rules.Optional(request.Description, 1000, "description", "Description", errors);
         if (request.Icon is not null)
@@ -130,7 +133,7 @@ public sealed class CollectionService(
         }
 
         var imagePath = collection.CoverType == CoverType.Image ? collection.CoverValue : null;
-        collections.Remove(collection);      // fields and records are removed by the FK cascade
+        collections.Remove(collection); // fields and records are removed by the FK cascade
         await uow.SaveChangesAsync(ct);
         if (imagePath is not null) await storage.DeleteAsync(imagePath, ct);
     }

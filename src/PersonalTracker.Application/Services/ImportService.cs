@@ -27,11 +27,10 @@ public sealed class ImportService(
         _ = await collections.GetAsync(collectionId, userId, includeFields: false, track: false, ct)
             ?? throw new NotFoundException("Collection not found.");
 
-        var rows = request.Rows ?? new List<List<string?>>();
-        var mappings = request.Mappings ?? new List<ImportMapping>();
-        var options = request.Options ?? new ImportOptions(false, MissingPolicy.Error, MissingPolicy.Error, null);
+        var rows = request.Rows;
+        var mappings = request.Mappings;
+        var options = request.Options;
 
-        // Tracked: options added by "create missing options" are saved with the import, and only then.
         var collectionFields = await fields.ListByCollectionAsync(collectionId, track: true, ct);
         var byId = collectionFields.ToDictionary(f => f.Id);
         var byKey = collectionFields.ToDictionary(f => f.Key);
@@ -85,7 +84,15 @@ public sealed class ImportService(
             lookups[field.Id] = new RefLookup(targetId, title, index);
         }
 
-        var now = clock.GetUtcNow().UtcDateTime;
+        var cursor = clock.GetUtcNow().UtcDateTime;
+
+        DateTime NextTimestamp()
+        {
+            var stamp = cursor;
+            cursor = cursor.AddTicks(1);
+            return stamp;
+        }
+
         var accepted = new List<Dictionary<string, object?>>();
         var pending = new List<TrackerRecord>(); // target records created by "create missing"
         var rowCreated = new List<(RefLookup Lookup, string Label, TrackerRecord Record)>();
@@ -106,14 +113,16 @@ public sealed class ImportService(
 
             if (options.MissingReference == MissingPolicy.Create && lookup.CanCreate && key.Length > 0)
             {
+                var stamp = NextTimestamp();
                 var created = new TrackerRecord
                 {
                     CollectionId = lookup.TargetCollectionId,
                     UserId = userId,
                     DataJson = RecordData.Serialize(new Dictionary<string, object?> { [lookup.TitleField!.Key] = key }),
-                    CreatedAt = now,
-                    UpdatedAt = now
+                    CreatedAt = stamp,
+                    UpdatedAt = stamp
                 };
+
                 lookup.Index[key] = new List<Guid> { created.Id };
                 rowCreated.Add((lookup, key, created));
                 return new[] { created.Id };
@@ -154,8 +163,6 @@ public sealed class ImportService(
             {
                 try
                 {
-                    // Same rules as manual entry (required, min/max, URL scheme...). Reference existence was
-                    // already resolved above, so the per-row database check is skipped for speed.
                     accepted.Add(await validator.ValidateAsync(
                         userId, collectionFields, values, null, values.Keys.ToList(), ct, verifyReferences: false));
                     pending.AddRange(rowCreated.Select(c => c.Record));
@@ -168,7 +175,6 @@ public sealed class ImportService(
                 }
             }
 
-            // rejected row: undo any target records it wanted to create
             foreach (var (lookup, label, _) in rowCreated) lookup.Index.Remove(label);
         }
 
@@ -176,17 +182,20 @@ public sealed class ImportService(
         if (request.DryRun || blocked || accepted.Count == 0)
             return new ImportResult(rows.Count, accepted.Count, 0, errorCount, errors, false);
 
-        // ---- commit: everything in ONE SaveChanges = one transaction ------------------------------
         foreach (var record in pending) await records.AddAsync(record, ct);
         foreach (var data in accepted)
+        {
+            var stamp = NextTimestamp();
             await records.AddAsync(new TrackerRecord
             {
                 CollectionId = collectionId,
                 UserId = userId,
                 DataJson = RecordData.Serialize(data),
-                CreatedAt = now,
-                UpdatedAt = now
+                CreatedAt = stamp,
+                UpdatedAt = stamp
             }, ct);
+        }
+
         await uow.SaveChangesAsync(ct);
 
         return new ImportResult(rows.Count, accepted.Count, accepted.Count, errorCount, errors, true);

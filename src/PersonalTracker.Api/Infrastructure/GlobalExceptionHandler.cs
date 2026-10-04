@@ -15,7 +15,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                 problem = new ValidationProblemDetails(validation.Errors)
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    Title = "Please check the highlighted fields."
+                    Title = validation.Message
                 };
                 break;
             case NotFoundException notFound:
@@ -24,18 +24,21 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             case ConflictException conflict:
                 problem = new ProblemDetails { Status = StatusCodes.Status409Conflict, Title = conflict.Message };
                 if (conflict.Details is not null)
-                    foreach (var (key, value) in conflict.Details) problem.Extensions[key] = value;
+                    foreach (var (key, value) in conflict.Details)
+                        problem.Extensions[key] = value;
                 break;
             case AuthenticationFailedException auth:
                 problem = new ProblemDetails { Status = StatusCodes.Status401Unauthorized, Title = auth.Message };
                 break;
             case BadHttpRequestException bad:
-                problem = new ProblemDetails { Status = bad.StatusCode, Title = "The request could not be understood." };
+                problem = new ProblemDetails
+                    { Status = bad.StatusCode, Title = "The request could not be understood." };
                 break;
             case OperationCanceledException when context.RequestAborted.IsCancellationRequested:
                 return true; // client went away; nothing to write
             default:
-                logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
+                logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method,
+                    context.Request.Path);
                 problem = new ProblemDetails
                 {
                     Status = StatusCodes.Status500InternalServerError,
@@ -46,7 +49,8 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         problem.Extensions["traceId"] = context.TraceIdentifier;
         context.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
-        await context.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", cancellationToken: ct);
+        await context.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json",
+            cancellationToken: ct);
         return true;
     }
 }
