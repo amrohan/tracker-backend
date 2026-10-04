@@ -21,6 +21,21 @@ public static class ApiExtensions
         services.AddOpenApi();
         services.AddHealthChecks();
 
+        services.AddCors(options =>
+        {
+            options.AddPolicy("Frontend", policy =>
+            {
+                policy
+                    .WithOrigins(
+                        "https://trackoo.pages.dev",
+                        "https://tracker.amrohan.in"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+
         var jwt = configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -62,6 +77,7 @@ public static class ApiExtensions
         app.UseExceptionHandler();
         app.UseDefaultFiles();
         app.UseStaticFiles();
+        app.UseCors("Frontend");
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
