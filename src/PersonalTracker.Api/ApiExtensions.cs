@@ -95,6 +95,7 @@ public static class ApiExtensions
         app.MapFieldEndpoints();
         app.MapRecordEndpoints();
         app.MapImportEndpoints();
+        app.MapSavedFilterEndpoints();
 
         // Unknown /api routes are real 404s; every other unknown route is the Angular SPA.
         app.MapFallback("/api/{**path}",

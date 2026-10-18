@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<ICoverService, CoverService>();
         services.AddScoped<IRecordService, RecordService>();
         services.AddScoped<IImportService, ImportService>();
+        services.AddScoped<ISavedFilterService, SavedFilterService>();
         return services;
     }
 }

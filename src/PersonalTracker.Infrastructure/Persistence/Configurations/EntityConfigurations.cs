@@ -113,3 +113,24 @@ public static class FieldConfigJson
             ? new FieldConfig()
             : JsonSerializer.Deserialize<FieldConfig>(json, JsonDefaults.Options) ?? new FieldConfig();
 }
+public sealed class SavedFilterConfiguration : IEntityTypeConfiguration<SavedFilter>
+{
+    public void Configure(EntityTypeBuilder<SavedFilter> b)
+    {
+        b.ToTable("SavedFilters");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.Property(x => x.FiltersJson).HasColumnType("TEXT").IsRequired();
+        b.HasIndex(x => new { x.CollectionId, x.UserId });
+
+        b.HasOne<Collection>()
+            .WithMany()
+            .HasForeignKey(x => x.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

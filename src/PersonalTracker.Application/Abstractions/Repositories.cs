@@ -49,3 +49,11 @@ public interface IRecordRepository
     Task AddAsync(TrackerRecord record, CancellationToken ct);
     void Remove(TrackerRecord record);
 }
+
+public interface ISavedFilterRepository
+{
+    Task<List<SavedFilter>> ListAsync(Guid collectionId, Guid userId, CancellationToken ct);
+    Task<SavedFilter?> GetAsync(Guid id, Guid userId, CancellationToken ct);
+    Task AddAsync(SavedFilter filter, CancellationToken ct);
+    void Remove(SavedFilter filter);
+}

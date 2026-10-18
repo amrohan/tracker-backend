@@ -172,6 +172,42 @@ namespace PersonalTracker.Infrastructure.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PersonalTracker.Domain.Entities.SavedFilter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CollectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FiltersJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CollectionId", "UserId");
+
+                    b.ToTable("SavedFilters", (string)null);
+                });
+
             modelBuilder.Entity("PersonalTracker.Domain.Entities.TrackerRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -270,6 +306,21 @@ namespace PersonalTracker.Infrastructure.Migrations
 
             modelBuilder.Entity("PersonalTracker.Domain.Entities.RefreshToken", b =>
                 {
+                    b.HasOne("PersonalTracker.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PersonalTracker.Domain.Entities.SavedFilter", b =>
+                {
+                    b.HasOne("PersonalTracker.Domain.Entities.Collection", null)
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("PersonalTracker.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

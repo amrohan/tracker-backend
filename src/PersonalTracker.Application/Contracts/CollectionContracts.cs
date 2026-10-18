@@ -38,3 +38,7 @@ public sealed record FieldTypeInfoDto(
     FieldType Type, string Label, ValueKind Kind,
     IReadOnlyList<FilterOperator> Operators, IReadOnlyList<AggregationType> Aggregations,
     bool Sortable, IReadOnlyList<FieldType> ConvertibleTo);
+
+public sealed record SavedFilterDto(Guid Id, Guid CollectionId, string Name, string FiltersJson, DateTime CreatedAt, DateTime UpdatedAt);
+
+public sealed record SavedFilterRequest(string Name, string FiltersJson);

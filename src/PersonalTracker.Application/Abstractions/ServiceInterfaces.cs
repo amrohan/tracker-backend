@@ -60,3 +60,10 @@ public interface IRecordValueValidator
         IEnumerable<string> submittedKeys, CancellationToken ct,
         bool verifyReferences = true);
 }
+public interface ISavedFilterService
+{
+    Task<IReadOnlyList<SavedFilterDto>> ListAsync(Guid collectionId, CancellationToken ct);
+    Task<SavedFilterDto> CreateAsync(Guid collectionId, SavedFilterRequest request, CancellationToken ct);
+    Task<SavedFilterDto> UpdateAsync(Guid id, SavedFilterRequest request, CancellationToken ct);
+    Task DeleteAsync(Guid id, CancellationToken ct);
+}

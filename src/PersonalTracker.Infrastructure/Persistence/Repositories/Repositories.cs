@@ -146,3 +146,20 @@ public sealed class RecordRepository(AppDbContext db) : IRecordRepository
 
     public void Remove(TrackerRecord record) => db.Records.Remove(record);
 }
+
+public sealed class SavedFilterRepository(AppDbContext db) : ISavedFilterRepository
+{
+    public Task<List<SavedFilter>> ListAsync(Guid collectionId, Guid userId, CancellationToken ct) =>
+        db.SavedFilters.AsNoTracking()
+            .Where(f => f.CollectionId == collectionId && f.UserId == userId)
+            .OrderBy(f => f.Name)
+            .ToListAsync(ct);
+
+    public Task<SavedFilter?> GetAsync(Guid id, Guid userId, CancellationToken ct) =>
+        db.SavedFilters.FirstOrDefaultAsync(f => f.Id == id && f.UserId == userId, ct);
+
+    public async Task AddAsync(SavedFilter filter, CancellationToken ct) =>
+        await db.SavedFilters.AddAsync(filter, ct);
+
+    public void Remove(SavedFilter filter) => db.SavedFilters.Remove(filter);
+}
